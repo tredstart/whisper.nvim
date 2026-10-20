@@ -9,16 +9,20 @@ local function wrap_text(text, prefix, width)
   if max < 20 then max = 20 end
 
   local lines = {}
-  for segment in text:gmatch("[^\n]+") do
-    while #segment > max do
-      local cut = max
-      local space = segment:sub(1, max):match(".*()%s")
-      if space and space > max * 0.4 then cut = space end
-      table.insert(lines, segment:sub(1, cut))
-      segment = segment:sub(cut + 1):match("^%s*(.*)$")
-    end
-    if #segment > 0 then
-      table.insert(lines, segment)
+  for segment in text:gmatch("([^\n]*)") do
+    if #segment == 0 then
+      table.insert(lines, "")
+    else
+      while #segment > max do
+        local cut = max
+        local space = segment:sub(1, max):match(".*()%s")
+        if space and space > max * 0.4 then cut = space end
+        table.insert(lines, segment:sub(1, cut))
+        segment = segment:sub(cut + 1):match("^%s*(.*)$")
+      end
+      if #segment > 0 then
+        table.insert(lines, segment)
+      end
     end
   end
   return lines
@@ -89,7 +93,7 @@ function M.show_spinner(bufnr, row)
     virt_text_pos = "eol",
   })
   local key = bufnr .. ":" .. row
-  local timer = vim.uv.new_timer()
+  local timer = assert(vim.uv.new_timer())
   active_spinners[key] = { timer = timer, mark_id = mark_id, bufnr = bufnr, row = row }
   timer:start(100, 100, vim.schedule_wrap(function()
     local s = active_spinners[key]
@@ -131,7 +135,7 @@ function M.propose_diff(bufnr, start_row, end_row, new_text, on_decide)
   for _, line in ipairs(new_lines) do
     table.insert(modified, line)
   end
-  for i = end_row + 2, #original_lines do
+  for i = end_row + 1, #original_lines do
     table.insert(modified, original_lines[i])
   end
 
